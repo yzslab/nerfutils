@@ -311,10 +311,10 @@ if __name__ == "__main__":
         "w": img_width // args.down_sample,
         # "h": 912.0,
         "h": img_height // args.down_sample,
-        "aabb_scale": 16,
+        "aabb_scale": args.aabb_scale,
         "frames": frames,
-        "scale": 1.,
-        "offset": [0, 0, 0]
+        # "scale": 1.,
+        # "offset": [0, 0, 0]
     }
 
     with open(args.out, "w") as f:

@@ -7,4 +7,5 @@ def get_parameters():
     parser.add_argument("--out")
     parser.add_argument("--down_sample", type=int, default=1)
     parser.add_argument("--images", type=str, default="images")
+    parser.add_argument("--aabb_scale", type=int, default=16)
     return parser.parse_args()
