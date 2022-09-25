@@ -146,7 +146,7 @@ def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
         # c2w = np.linalg.inv(w2c)
 
         transform_matrix[file] = np.asarray(generate_transform_matrix(
-            [x, y, z],
+            [x, -y, z],
             [
                 math.radians(-gimbal["yaw"]),
                 math.radians(-gimbal["pitch"]),
@@ -158,17 +158,17 @@ def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
 
     fig, ax = plt.subplots(nrows=2, ncols=1)
     fig.set_figwidth(15)
-    fig.set_figheight(10)
+    fig.set_figheight(15)
     fig.tight_layout(pad=5.0)
-    ax[0].set_title('latitude - longitude')
-    ax[0].plot(camera_lat, camera_long, 'ro')
-    ax[0].set_xlabel('latitude')
-    ax[0].set_ylabel('longitude')
+    ax[0].set_title('longitude - latitude')
+    ax[0].plot(camera_long, camera_lat, 'ro')
+    ax[0].set_xlabel('longitude')
+    ax[0].set_ylabel('latitude')
 
-    ax[1].set_title('NED: x - y')
-    ax[1].plot(camera_x, camera_y, 'ro')
-    ax[1].set_xlabel('x')
-    ax[1].set_ylabel('y')
+    ax[1].set_title('NED: y - x')
+    ax[1].plot(camera_y, camera_x, 'ro')
+    ax[1].set_xlabel('y')
+    ax[1].set_ylabel('x')
     fig.savefig(save_camera_scatter_figure, dpi=600)
 
     return transform_matrix
@@ -257,7 +257,7 @@ def recenter(transform_matrix: dict) -> dict:
     avglen /= nframes
     print("avg camera distance from origin", avglen)
     for f in transform_matrix:
-        transform_matrix[f][0:3, 3] *= 8 / avglen  # scale to "nerf sized"
+        transform_matrix[f][0:3, 3] *= 4 / avglen  # scale to "nerf sized"
 
     return transform_matrix
 
@@ -270,15 +270,19 @@ if __name__ == "__main__":
     transform_matrix = calculate_transform_matrix(img_exif, origin, args.out+".camera_scatter.png")
     # up = calculate_up_vector(transform_matrix)
     # transform_matrix = reorient(up, transform_matrix)
-    # transform_matrix = recenter(transform_matrix)
-    for f in transform_matrix:
-        transform_matrix[f][0:3, 3] *= 0.05  # scale to "nerf sized"
+    transform_matrix = recenter(transform_matrix)
+    # for f in transform_matrix:
+    #     transform_matrix[f][0:3, 3] *= 0.02  # scale to "nerf sized"
 
     # build frames
     frames = [
         # {
-        #     "file_path": "images_4/org_0d70401c25955015_1662713474000.jpg",
-        #     "transform_matrix": generate_transform_matrix([0, 0, 0], [0, 0, 0]).tolist(),
+        #     "file_path": "images_4/DJI_0162.JPG",
+        #     "transform_matrix": generate_transform_matrix([0, 0, 1], [0, 0, 0]).tolist(),
+        # },
+        # {
+        #     "file_path": "images_4/DJI_0162.JPG",
+        #     "transform_matrix": generate_transform_matrix([1, 1, 1], [0, 0, 0]).tolist(),
         # },
     ]
     for f in transform_matrix:
@@ -307,7 +311,7 @@ if __name__ == "__main__":
         "w": img_width // args.down_sample,
         # "h": 912.0,
         "h": img_height // args.down_sample,
-        "aabb_scale": 1,
+        "aabb_scale": 16,
         "frames": frames,
         "scale": 1.,
         "offset": [0, 0, 0]
