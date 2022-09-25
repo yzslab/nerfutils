@@ -44,6 +44,7 @@ def extract_by_directory(path: str):
 
     # get image filename in directory
     image_list = glob.glob(os.path.join(path, "*.jpg"))
+    image_list += glob.glob(os.path.join(path, "*.JPG"))
     for image_path in image_list:
         with PIL.Image.open(image_path) as im:
             exif, _ = extract_exif_values(im)
