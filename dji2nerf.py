@@ -2,6 +2,7 @@ import math
 import os
 import numpy as np
 import json
+import matplotlib.pyplot as plt
 import pymap3d as pm
 
 import internal.arguments
@@ -91,8 +92,14 @@ def generate_transform_matrix(pos, rot):
     # return xf
 
 
-def calculate_transform_matrix(img_exif, origin):
+def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
     transform_matrix = {}
+
+    camera_x = []
+    camera_lat = []
+    camera_y = []
+    camera_long = []
+
     for file in img_exif:
         # if os.path.basename(file) not in ["org_0d70401c25955015_1662713474000.jpg",
         #                                   "org_339ce74e4b30f712_1662713702000.jpg",
@@ -124,6 +131,11 @@ def calculate_transform_matrix(img_exif, origin):
         print(
             f"{file}: (lat: {gps['latitude']}, long: {gps['longitude']}, alt: {gps['relative_altitude']}) ({x}, {y}, {z})")
 
+        camera_x.append(x)
+        camera_lat.append(gps["latitude"])
+        camera_y.append(y)
+        camera_long.append(gps["longitude"])
+
         # print(file)
         # print(gimbal_rotation_matrix)
         # xyz = [[-x], [-y], [-z]]
@@ -143,6 +155,21 @@ def calculate_transform_matrix(img_exif, origin):
         ))
         # transform_matrix[file] = np.identity(4)
         # transform_matrix[file][:3, 3] = [x, y, z]
+
+    fig, ax = plt.subplots(nrows=2, ncols=1)
+    fig.set_figwidth(15)
+    fig.set_figheight(10)
+    fig.tight_layout(pad=5.0)
+    ax[0].set_title('latitude - longitude')
+    ax[0].plot(camera_lat, camera_long, 'ro')
+    ax[0].set_xlabel('latitude')
+    ax[0].set_ylabel('longitude')
+
+    ax[1].set_title('NED: x - y')
+    ax[1].plot(camera_x, camera_y, 'ro')
+    ax[1].set_xlabel('x')
+    ax[1].set_ylabel('y')
+    fig.savefig(save_camera_scatter_figure)
 
     return transform_matrix
 
@@ -240,7 +267,7 @@ if __name__ == "__main__":
     img_exif = internal.exif.parse_exif_values_by_directory(args.path)
 
     img_width, img_height, camera_angle_x, camera_angle_y, cx, cy, origin = get_meta_info(img_exif)
-    transform_matrix = calculate_transform_matrix(img_exif, origin)
+    transform_matrix = calculate_transform_matrix(img_exif, origin, args.out+".camera_scatter.png")
     # up = calculate_up_vector(transform_matrix)
     # transform_matrix = reorient(up, transform_matrix)
     # transform_matrix = recenter(transform_matrix)

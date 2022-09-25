@@ -1,5 +1,6 @@
 Pillow
 pyyaml
 numpy
+matplotlib
 scipy
 pymap3d
