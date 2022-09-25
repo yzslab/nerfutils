@@ -169,7 +169,7 @@ def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
     ax[1].plot(camera_x, camera_y, 'ro')
     ax[1].set_xlabel('x')
     ax[1].set_ylabel('y')
-    fig.savefig(save_camera_scatter_figure)
+    fig.savefig(save_camera_scatter_figure, dpi=600)
 
     return transform_matrix
 
