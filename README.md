@@ -3,7 +3,7 @@ Converting DJI euler angles and GPS coordinates to NeRF transform matrix
 
 ## Usage
 ```bash
-python dji2nerf.py \
+python dji2ngp.py \
     PATH_TO_YOUUR_DJI_IMAGE_DIRECTORY \
     --out PATH_TO_OUTPUT_transforms.json \
     --down_sample DOWN_SAMPLE_FACTOR \
@@ -11,7 +11,7 @@ python dji2nerf.py \
 ```
 ### Example
 ```bash
-python dji2nerf.py \
+python dji2ngp.py \
     ./images \
     --out ./transforms.json \
     --down_sample 4 \

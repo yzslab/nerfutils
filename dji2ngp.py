@@ -231,7 +231,7 @@ def reorient(up: np.ndarray, transform_matrix: dict) -> dict:
     return transform_matrix
 
 
-def recenter(transform_matrix: dict) -> dict:
+def recenter(transform_matrix: dict, scene_scale: float) -> dict:
     # find a central point they are all looking at
     print("computing center of attention...")
     totw = 0.0
@@ -257,7 +257,7 @@ def recenter(transform_matrix: dict) -> dict:
     avglen /= nframes
     print("avg camera distance from origin", avglen)
     for f in transform_matrix:
-        transform_matrix[f][0:3, 3] *= 4 / avglen  # scale to "nerf sized"
+        transform_matrix[f][0:3, 3] *= 4 * scene_scale / avglen  # scale to "nerf sized"
 
     return transform_matrix
 
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     transform_matrix = calculate_transform_matrix(img_exif, origin, args.out+".camera_scatter.png")
     # up = calculate_up_vector(transform_matrix)
     # transform_matrix = reorient(up, transform_matrix)
-    transform_matrix = recenter(transform_matrix)
+    transform_matrix = recenter(transform_matrix, args.scene_scale)
     # for f in transform_matrix:
     #     transform_matrix[f][0:3, 3] *= 0.02  # scale to "nerf sized"
 
