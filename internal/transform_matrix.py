@@ -31,7 +31,7 @@ def euler_angles_to_rotation_matrix(zyx_angles: list):
     # intrinsic rotation
     rotation_matrix = rz(zyx_angles[0]) @ ry(zyx_angles[1]) @ rx(zyx_angles[2])
     # make camera point to -z
-    rotation_matrix = rotation_matrix @ ry(-np.pi/2) @ rz(-np.pi/2)
+    rotation_matrix = rotation_matrix @ ry(-np.pi / 2) @ rz(-np.pi / 2)
 
     # transform_matrix = np.eye(4)
     # transform_matrix[:3, :3] = R
@@ -62,6 +62,13 @@ def generate_transform_matrix(xyz_coordinate, zyx_euler_angles):
 
 
 def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
+    """
+
+    :param img_exif:
+    :param origin:
+    :param save_camera_scatter_figure:
+    :return: transform matrix dictionary key by image name
+    """
     transform_matrix = {}
 
     camera_x = []
@@ -139,5 +146,52 @@ def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
     ax[1].set_xlabel('y')
     ax[1].set_ylabel('x')
     fig.savefig(save_camera_scatter_figure, dpi=600)
+
+    return transform_matrix
+
+
+def closest_point_2_lines(oa, da, ob,
+                          db):  # returns point closest to both rays of form o+t*d, and a weight factor that goes to 0 if the lines are parallel
+    da = da / np.linalg.norm(da)
+    db = db / np.linalg.norm(db)
+    c = np.cross(da, db)
+    denom = np.linalg.norm(c) ** 2
+    t = ob - oa
+    ta = np.linalg.det([t, db, c]) / (denom + 1e-10)
+    tb = np.linalg.det([t, da, c]) / (denom + 1e-10)
+    if ta > 0:
+        ta = 0
+    if tb > 0:
+        tb = 0
+    return (oa + ta * da + ob + tb * db) * 0.5, denom
+
+
+def recenter(transform_matrix: dict, scene_scale: float) -> dict:
+    # find a central point they are all looking at
+    print("computing center of attention...")
+    totw = 0.0
+    totp = np.array([0.0, 0.0, 0.0])
+    for f in transform_matrix:
+        mf = transform_matrix[f][0:3, :]
+        for g in transform_matrix:
+            mg = transform_matrix[g][0:3, :]
+            p, w = closest_point_2_lines(mf[:, 3], mf[:, 2], mg[:, 3], mg[:, 2])
+            if w > 0.01:
+                totp += p * w
+                totw += w
+    totp /= totw
+    print(totp)  # the cameras are looking at totp
+    for f in transform_matrix:
+        transform_matrix[f][0:3, 3] -= totp
+
+    avglen = 0.
+    for f in transform_matrix:
+        avglen += np.linalg.norm(transform_matrix[f][0:3, 3])
+
+    nframes = len(transform_matrix)
+    avglen /= nframes
+    print("avg camera distance from origin", avglen)
+    for f in transform_matrix:
+        transform_matrix[f][0:3, 3] *= 4 * scene_scale / avglen  # scale to "nerf sized"
 
     return transform_matrix
