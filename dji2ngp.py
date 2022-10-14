@@ -1,37 +1,12 @@
-import math
 import os
 import numpy as np
 import json
-import matplotlib.pyplot as plt
-import pymap3d as pm
 
 import internal.arguments
 import internal.exif
 import internal.transform_matrix
 
-
-def get_meta_info(img_exif):
-    first_exif = img_exif[list(img_exif.keys())[0]]
-
-    # width and height
-    img_width = first_exif["ImageWidth"]
-    img_height = first_exif["ImageLength"]
-
-    # field of view calculation
-    fl_in_35mm = first_exif["FocalLengthIn35mmFilm"]
-    # 35 mm movie film dimensions: 36mm x 24mm
-    camera_angle_x = 2 * np.arctan((36 / 2) / fl_in_35mm)
-    camera_angle_y = 2 * np.arctan((24 / 2) / fl_in_35mm)
-
-    # principle point
-    cx = img_width / 2
-    cy = img_height / 2
-
-    xmp_values = first_exif["xmp"]
-    gps = xmp_values["gps"]
-    origin = [gps["latitude"], gps["longitude"], gps["relative_altitude"]]
-
-    return img_width, img_height, camera_angle_x, camera_angle_y, cx, cy, origin
+from internal.utils import get_meta_info
 
 
 def calculate_up_vector(transform_matrix: dict) -> np.ndarray:
@@ -62,20 +37,6 @@ def rotmat(a, b):
     return np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2 + 1e-10))
 
 
-def closest_point_2_lines(oa, da, ob,
-                          db):  # returns point closest to both rays of form o+t*d, and a weight factor that goes to 0 if the lines are parallel
-    da = da / np.linalg.norm(da)
-    db = db / np.linalg.norm(db)
-    c = np.cross(da, db)
-    denom = np.linalg.norm(c) ** 2
-    t = ob - oa
-    ta = np.linalg.det([t, db, c]) / (denom + 1e-10)
-    tb = np.linalg.det([t, da, c]) / (denom + 1e-10)
-    if ta > 0:
-        ta = 0
-    if tb > 0:
-        tb = 0
-    return (oa + ta * da + ob + tb * db) * 0.5, denom
 
 
 def reorient(up: np.ndarray, transform_matrix: dict) -> dict:
@@ -91,46 +52,18 @@ def reorient(up: np.ndarray, transform_matrix: dict) -> dict:
     return transform_matrix
 
 
-def recenter(transform_matrix: dict, scene_scale: float) -> dict:
-    # find a central point they are all looking at
-    print("computing center of attention...")
-    totw = 0.0
-    totp = np.array([0.0, 0.0, 0.0])
-    for f in transform_matrix:
-        mf = transform_matrix[f][0:3, :]
-        for g in transform_matrix:
-            mg = transform_matrix[g][0:3, :]
-            p, w = closest_point_2_lines(mf[:, 3], mf[:, 2], mg[:, 3], mg[:, 2])
-            if w > 0.01:
-                totp += p * w
-                totw += w
-    totp /= totw
-    print(totp)  # the cameras are looking at totp
-    for f in transform_matrix:
-        transform_matrix[f][0:3, 3] -= totp
-
-    avglen = 0.
-    for f in transform_matrix:
-        avglen += np.linalg.norm(transform_matrix[f][0:3, 3])
-
-    nframes = len(transform_matrix)
-    avglen /= nframes
-    print("avg camera distance from origin", avglen)
-    for f in transform_matrix:
-        transform_matrix[f][0:3, 3] *= 4 * scene_scale / avglen  # scale to "nerf sized"
-
-    return transform_matrix
 
 
 if __name__ == "__main__":
     args = internal.arguments.get_parameters()
     img_exif = internal.exif.parse_exif_values_by_directory(args.path)
 
-    img_width, img_height, camera_angle_x, camera_angle_y, cx, cy, origin = get_meta_info(img_exif)
-    transform_matrix = internal.transform_matrix.calculate_transform_matrix(img_exif, origin, args.out + ".camera_scatter.png")
+    img_width, img_height, focal_length_in_pixel, camera_angle_x, camera_angle_y, cx, cy, origin = get_meta_info(img_exif)
+    transform_matrix = internal.transform_matrix.calculate_transform_matrix(img_exif, origin,
+                                                                            args.out + ".camera_scatter.png")
     # up = calculate_up_vector(transform_matrix)
     # transform_matrix = reorient(up, transform_matrix)
-    transform_matrix = recenter(transform_matrix, args.scene_scale)
+    transform_matrix = internal.transform_matrix.recenter(transform_matrix, args.scene_scale)
     # for f in transform_matrix:
     #     transform_matrix[f][0:3, 3] *= 0.02  # scale to "nerf sized"
 
