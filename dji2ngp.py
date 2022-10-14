@@ -7,7 +7,7 @@ import pymap3d as pm
 
 import internal.arguments
 import internal.exif
-from scipy.spatial.transform import Rotation as R
+import internal.transform_matrix
 
 
 def get_meta_info(img_exif):
@@ -32,146 +32,6 @@ def get_meta_info(img_exif):
     origin = [gps["latitude"], gps["longitude"], gps["relative_altitude"]]
 
     return img_width, img_height, camera_angle_x, camera_angle_y, cx, cy, origin
-
-
-def generate_transform_matrix(pos, rot):
-    def Rx(theta):
-        return np.matrix([[1, 0, 0],
-                          [0, np.cos(theta), -np.sin(theta)],
-                          [0, np.sin(theta), np.cos(theta)]])
-
-    def Ry(theta):
-        return np.matrix([[np.cos(theta), 0, np.sin(theta)],
-                          [0, 1, 0],
-                          [-np.sin(theta), 0, np.cos(theta)]])
-
-    def Rz(theta):
-        return np.matrix([[np.cos(theta), -np.sin(theta), 0],
-                          [np.sin(theta), np.cos(theta), 0],
-                          [0, 0, 1]])
-
-    # intrinsic rotation
-    R = Rz(rot[0]) @ Ry(rot[1]) @ Rx(rot[2]) @ Ry(-np.pi/2) @ Rz(-np.pi/2)
-
-    transform_matrix = np.eye(4)
-    transform_matrix[:3, :3] = R
-    transform_matrix[:3, 3] = pos
-
-    return transform_matrix
-
-    # flip_mat = np.array([
-    #     [1, 0, 0, 0],
-    #     [0, -1, 0, 0],
-    #     [0, 0, -1, 0],
-    #     [0, 0, 0, 1]
-    # ])
-    #
-    # transform_matrix = np.matmul(transform_matrix, flip_mat)
-    #
-    # return transform_matrix
-
-    # barbershop_mirros_hd_dense:
-    # - camera plane is y+z plane, meaning: constant x-values
-    # - cameras look to +x
-
-    # # Don't ask me...
-    # extra_xf = np.matrix([
-    #     [-1, 0, 0, 0],
-    #     [0, 0, 1, 0],
-    #     [0, 1, 0, 0],
-    #     [0, 0, 0, 1]])
-    # # NerF will cycle forward, so lets cycle backward.
-    # shift_coords = np.matrix([
-    #     [0, 0, 1, 0],
-    #     [1, 0, 0, 0],
-    #     [0, 1, 0, 0],
-    #     [0, 0, 0, 1]])
-    # xf = shift_coords @ extra_xf @ xf_pos
-    # assert np.abs(np.linalg.det(xf) - 1.0) < 1e-4
-    # xf = xf @ xf_rot
-    # return xf
-
-
-def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
-    transform_matrix = {}
-
-    camera_x = []
-    camera_lat = []
-    camera_y = []
-    camera_long = []
-
-    for file in img_exif:
-        # if os.path.basename(file) not in ["org_0d70401c25955015_1662713474000.jpg",
-        #                                   "org_339ce74e4b30f712_1662713702000.jpg",
-        #                                   "org_5135a599f9a58a74_1662713576000.jpg"]:
-        #     continue
-        exif_values = img_exif[file]
-        xmp_values = exif_values["xmp"]
-
-        # convert gimbal euler angles to rotation matrix
-        gimbal = xmp_values["gimbal"]
-        # gimbal_r = R.from_euler('zyx', [gimbal["yaw"], gimbal["pitch"], gimbal["roll"]], degrees=True)
-        # gimbal_rotation_matrix = gimbal_r.as_matrix()
-
-        gps = xmp_values["gps"]
-        # NED
-        # x = gps["latitude"]
-        # y = gps["longitude"]
-        # z = -gps["relative_altitude"]
-        # ENU
-        # x = gps["longitude"]
-        # y = gps["latitude"]
-        # z = gps["relative_altitude"]
-
-        y, x, z = pm.geodetic2enu(
-            gps["latitude"], gps["longitude"], gps["relative_altitude"],
-            origin[0], origin[1], origin[2]
-        )
-
-        print(
-            f"{file}: (lat: {gps['latitude']}, long: {gps['longitude']}, alt: {gps['relative_altitude']}) ({x}, {y}, {z})")
-
-        camera_x.append(x)
-        camera_lat.append(gps["latitude"])
-        camera_y.append(y)
-        camera_long.append(gps["longitude"])
-
-        # print(file)
-        # print(gimbal_rotation_matrix)
-        # xyz = [[-x], [-y], [-z]]
-        # # print(xyz)
-        # w2c = np.concatenate([gimbal_rotation_matrix, xyz], axis=-1)
-        # w2c = np.concatenate([w2c, [[0, 0, 0, 1]]], axis=0)
-        # # print(w2c)
-        # c2w = np.linalg.inv(w2c)
-
-        transform_matrix[file] = np.asarray(generate_transform_matrix(
-            [x, -y, z],
-            [
-                math.radians(-gimbal["yaw"]),
-                math.radians(-gimbal["pitch"]),
-                math.radians(-gimbal["roll"])
-            ]
-        ))
-        # transform_matrix[file] = np.identity(4)
-        # transform_matrix[file][:3, 3] = [x, y, z]
-
-    fig, ax = plt.subplots(nrows=2, ncols=1)
-    fig.set_figwidth(15)
-    fig.set_figheight(15)
-    fig.tight_layout(pad=5.0)
-    ax[0].set_title('longitude - latitude')
-    ax[0].plot(camera_long, camera_lat, 'ro')
-    ax[0].set_xlabel('longitude')
-    ax[0].set_ylabel('latitude')
-
-    ax[1].set_title('NED: y - x')
-    ax[1].plot(camera_y, camera_x, 'ro')
-    ax[1].set_xlabel('y')
-    ax[1].set_ylabel('x')
-    fig.savefig(save_camera_scatter_figure, dpi=600)
-
-    return transform_matrix
 
 
 def calculate_up_vector(transform_matrix: dict) -> np.ndarray:
@@ -267,7 +127,7 @@ if __name__ == "__main__":
     img_exif = internal.exif.parse_exif_values_by_directory(args.path)
 
     img_width, img_height, camera_angle_x, camera_angle_y, cx, cy, origin = get_meta_info(img_exif)
-    transform_matrix = calculate_transform_matrix(img_exif, origin, args.out+".camera_scatter.png")
+    transform_matrix = internal.transform_matrix.calculate_transform_matrix(img_exif, origin, args.out + ".camera_scatter.png")
     # up = calculate_up_vector(transform_matrix)
     # transform_matrix = reorient(up, transform_matrix)
     transform_matrix = recenter(transform_matrix, args.scene_scale)
