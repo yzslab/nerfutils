@@ -7,7 +7,7 @@ python dji2ngp.py \
     PATH_TO_YOUUR_DJI_IMAGE_DIRECTORY \
     --out PATH_TO_OUTPUT_transforms.json \
     --down_sample DOWN_SAMPLE_FACTOR \
-    --images DOWN_SAMPLED_IMAGE_DIRECTORY
+    --image_dir DOWN_SAMPLED_IMAGE_DIRECTORY
 ```
 ### Example
 ```bash
@@ -15,5 +15,5 @@ python dji2ngp.py \
     ./images \
     --out ./transforms.json \
     --down_sample 4 \
-    --images images_4
+    --image_dir images_4
 ```
