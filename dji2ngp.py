@@ -80,7 +80,7 @@ if __name__ == "__main__":
     ]
     for f in transform_matrix:
         frames.append({
-            "file_path": os.path.join(args.images, os.path.basename(f)),
+            "file_path": os.path.join(args.image_dir, os.path.basename(f)),
             "transform_matrix": transform_matrix[f].tolist(),
         })
 

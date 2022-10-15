@@ -67,9 +67,7 @@ if __name__ == "__main__":
     os.makedirs("test", exist_ok=True)
     os.makedirs("validation", exist_ok=True)
 
-    image_directory = args.path
-    if args.down_sample != 1:
-        image_directory = args.path + f"_{args.down_sample}"
+    image_directory = args.image_dir
 
     # [train, test, camera_path]
     visualize_cameras = [{}, {}]
