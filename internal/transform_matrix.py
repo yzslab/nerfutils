@@ -105,7 +105,7 @@ def calculate_transform_matrix(img_exif, origin, save_camera_scatter_figure):
         )
 
         print(
-            f"{file}: (lat: {gps['latitude']}, long: {gps['longitude']}, alt: {gps['relative_altitude']}) ({x}, {y}, {z})")
+            f"{file}: (lat: {gps['latitude']}, long: {gps['longitude']}, alt: {gps['relative_altitude']}) (x: {x}, y: {y}, z: {z})")
 
         camera_x.append(x)
         camera_lat.append(gps["latitude"])
