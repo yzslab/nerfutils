@@ -12,8 +12,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("path", help="path to colmap sparse text database directory")
     parser.add_argument("--out", type=str, required=True)
-    parser.add_argument("--image_dir", type=str, default=None, help="path to images directory")
-    parser.add_argument("--scene_scale", type=float, default=1)
+    parser.add_argument("--image-dir", type=str, default=None, help="path to images directory")
+    parser.add_argument("--scene-scale", type=float, default=1)
     args = parser.parse_args()
 
     cameras, intrinsics_matrix = parse_cameras_txt(os.path.join(args.path, "cameras.txt"))

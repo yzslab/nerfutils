@@ -83,31 +83,22 @@
   ```
     - Example
       ```bash
-      python dji2ngp.py \
-          --exif_yaml exif.yaml \
-          --c2w_npy dji_c2w.npy \
+      python convert2ngp.py \
+          --transforms-npy transforms.npy \
           --out ./transforms.json \
           --down_sample 4 \
-          --image_dir images_4
+          --image_dir images_4 \
+          --recenter
       ```
 
 - Convert colmap text format database to NeRF Plus Plus format dataset
     ```bash
-    python dji2nerfpp.py \
-      PATH_TO_IMAGE_DIRECTORY \
-      --out DATASET_OUTPUT_DIRECTORY \
-      --down_sample IMAGE_DOWN_SAMPLE_FACTOR \
-      --scene_scale SCENE_SCALE_FACTOR # make all camera inside the unit sphere 
+    python colmap2nerfpp.py \
+      PATH_TO_COLMAP_SPARSE_TEXT_DATABASE_DIRECTORY \
+      --out OUTPUT_PATH \
+      --image-dir IMAGES_DIRECTORY \
+      --scene-scale SCENE_SCALE_FACTOR
     ```
-  ###
-    - Example
-      ```bash
-      python dji2nerfpp.py \
-        PATH_TO_IMAGE_DIRECTORY \
-        --out DATASET_OUTPUT_DIRECTORY \
-        --down_sample 4 \
-        --scene_scale 0.18
-      ```
 
 - Block NeRF
     1. Extract GPS and Euler Angles to yaml file
