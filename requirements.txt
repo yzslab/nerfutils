@@ -4,3 +4,6 @@ numpy
 matplotlib
 scipy
 pymap3d
+opencv-python
+open3d
+tqdm

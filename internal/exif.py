@@ -39,6 +39,35 @@ def extract_xmp_values(im):
     return xmp
 
 
+def gps_tuple_to_angle(i) -> float:
+    return (((float(i[2]) / 60.) + float(i[1])) / 60.) + float(i[0])
+
+
+def extract(image_path: str):
+    with PIL.Image.open(image_path) as im:
+        exif, _ = extract_exif_values(im)
+
+        gpsinfo = {}
+        for key in exif['GPSInfo'].keys():
+            decode = PIL.ExifTags.GPSTAGS.get(key, key)
+            gpsinfo[decode] = exif['GPSInfo'][key]
+        exif["GPSInfo"] = gpsinfo
+
+        exif["SimplifiedGPSInfo"] = {
+            "LatitudeRef": gpsinfo["GPSLatitudeRef"],
+            "LongitudeRef": gpsinfo["GPSLongitudeRef"],
+            "AltitudeRef": int.from_bytes(gpsinfo["GPSAltitudeRef"], "little"),
+            "Latitude": gps_tuple_to_angle(gpsinfo["GPSLatitude"]),
+            "Longitude": gps_tuple_to_angle(gpsinfo["GPSLongitude"]),
+            "Altitude": float(gpsinfo["GPSAltitude"]),
+        }
+
+        xmp = extract_xmp_values(im)
+        exif["xmp"] = xmp
+
+    return exif
+
+
 def extract_by_directory(path: str):
     img_exif = {}
 
@@ -46,11 +75,7 @@ def extract_by_directory(path: str):
     image_list = glob.glob(os.path.join(path, "*.jpg"))
     image_list += glob.glob(os.path.join(path, "*.JPG"))
     for image_path in image_list:
-        with PIL.Image.open(image_path) as im:
-            exif, _ = extract_exif_values(im)
-            xmp = extract_xmp_values(im)
-            exif["xmp"] = xmp
-            img_exif[image_path] = exif
+        img_exif[image_path] = extract(image_path)
 
     return img_exif
 

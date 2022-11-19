@@ -22,9 +22,23 @@ def rz(theta):
                       [0, 0, 1]])
 
 
+def convert_pose(c2w):
+    """
+    convert camera poses between Opencv and Opengl conventions
+
+    :param c2w:
+    :return:
+    """
+    flip_yz = np.eye(4)
+    flip_yz[1, 1] = -1
+    flip_yz[2, 2] = -1
+    c2w = np.matmul(c2w, flip_yz)
+    return c2w
+
+
 def euler_angles_to_rotation_matrix(zyx_angles: list):
     """
-    Return intrinsic rotation matrix
+    Return rotation matrix, -z ---> scene
     :param zyx_angles: in [z, y, x] order
     :return:
     """
@@ -54,6 +68,13 @@ def rtv_to_c2w(rotation_matrix, xyz_coordinate) -> np.ndarray:
 
 
 def generate_transform_matrix(xyz_coordinate, zyx_euler_angles):
+    """
+    -z ---> scene
+
+    :param xyz_coordinate:
+    :param zyx_euler_angles:
+    :return:
+    """
     # intrinsic rotation
     rotation_matrix = euler_angles_to_rotation_matrix(zyx_euler_angles)
     transform_matrix = rtv_to_c2w(rotation_matrix, xyz_coordinate)
@@ -195,3 +216,14 @@ def recenter(transform_matrix: dict, scene_scale: float) -> dict:
         transform_matrix[f][0:3, 3] *= 4 * scene_scale / avglen  # scale to "nerf sized"
 
     return transform_matrix
+
+
+def build_intrinsics_matrix(fl_x, cx, cy, fl_y=None) -> np.ndarray:
+    if fl_y is None:
+        fl_y = fl_x
+    return np.asarray([
+        [fl_x, 0, cx, 0],
+        [0, fl_y, cy, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ], dtype=float)
