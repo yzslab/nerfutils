@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -13,8 +14,8 @@ def calculate_up_vector(transform_matrix: dict) -> np.ndarray:
     for file in transform_matrix:
         c2w = transform_matrix[file]
 
-        c2w[0:3, 2] *= -1  # flip the y and z axis
-        c2w[0:3, 1] *= -1
+        # c2w[0:3, 2] *= -1  # flip the y and z axis
+        # c2w[0:3, 1] *= -1
         c2w = c2w[[1, 0, 2, 3], :]  # swap y and z
         c2w[2, :] *= -1  # flip whole world upside down
 
@@ -39,7 +40,7 @@ def rotmat(a, b):
 
 def reorient(up: np.ndarray, transform_matrix: dict) -> dict:
     up = up / np.linalg.norm(up)
-    print("up vector was", up)
+    # print("up vector was", up)
     R = rotmat(up, [0, 0, 1])  # rotate up vector to [0,0,1]
     R = np.pad(R, [0, 1])
     R[-1, -1] = 1
@@ -50,19 +51,19 @@ def reorient(up: np.ndarray, transform_matrix: dict) -> dict:
     return transform_matrix
 
 
-if __name__ == "__main__":
-    def parser_configure(parser):
-        parser.add_argument("--aabb-scale", type=int, default=16, help="only work for instant-ngp")
-        parser.add_argument("--scene-scale", type=float, default=1, help="only work with --recenter")
-        parser.add_argument("--recenter", action="store_true")
-        parser.add_argument("--reorient", action="store_true")
-        parser.add_argument("--scale", type=float)
-        parser.add_argument("--offset", nargs="+", type=float)
-
-
-    args = internal.arguments.get_parameters(parser_configure)
-
-    transforms_and_cameras = np.load(args.transforms_npy, allow_pickle=True).item()
+def convert2ngp(
+        transforms_npy_path: str,
+        out_path: str,
+        image_dir: str,
+        down_sample: int,
+        reorient_scene: bool,
+        recenter_scene: bool,
+        aabb_scale: int,
+        scene_scale: float,
+        scale: float,
+        offset: list,
+):
+    transforms_and_cameras = np.load(transforms_npy_path, allow_pickle=True).item()
 
     camera = transforms_and_cameras["cameras"][0]
 
@@ -79,50 +80,78 @@ if __name__ == "__main__":
     k2 = camera.get("k2", 0)
     p1 = camera.get("p1", 0)
     p2 = camera.get("p2", 0)
-    # if args.down_sample != 1:
+    # if down_sample != 1:
     #     k1, k2, p1, p2 = 0, 0, 0, 0
 
-    if args.reorient is True:
-        up = calculate_up_vector(transforms_and_cameras["image_c2w"])
-        transform_matrix = reorient(up, transforms_and_cameras["image_c2w"])
-    if args.recenter is True:
-        transform_matrix = internal.transform_matrix.recenter(transforms_and_cameras["image_c2w"], args.scene_scale)
+    transform_matrix = transforms_and_cameras["image_c2w"]
+
+    if reorient_scene is True:
+        up = calculate_up_vector(transform_matrix)
+        transform_matrix = reorient(up, transform_matrix)
+    if recenter_scene is True:
+        transform_matrix = internal.transform_matrix.recenter(transform_matrix, scene_scale)
     # for f in transform_matrix:
     #     transform_matrix[f][0:3, 3] *= 0.02  # scale to "nerf sized"
 
     # build frames
     frames = []
-    for f in transforms_and_cameras["image_c2w"]:
+    for f in transform_matrix:
         frames.append({
-            "file_path": os.path.join(args.image_dir, f),
-            "transform_matrix": transforms_and_cameras["image_c2w"][f].tolist(),
+            "file_path": os.path.join(image_dir, f),
+            "transform_matrix": transform_matrix[f].tolist(),
         })
 
     # build transform
     transforms = {
         "camera_angle_x": camera_angle_x,
         "camera_angle_y": camera_angle_y,
-        "fl_x": fl_x / args.down_sample,
-        "fl_y": fl_y / args.down_sample,
+        "fl_x": fl_x / down_sample,
+        "fl_y": fl_y / down_sample,
         "k1": k1,
         "k2": k2,
         "p1": p1,
         "p2": p2,
-        "cx": cx / args.down_sample,
-        "cy": cy / args.down_sample,
-        "w": img_width // args.down_sample,
-        "h": img_height // args.down_sample,
-        "aabb_scale": args.aabb_scale,
+        "cx": cx / down_sample,
+        "cy": cy / down_sample,
+        "w": img_width // down_sample,
+        "h": img_height // down_sample,
+        "aabb_scale": aabb_scale,
         # "scale": 1.,
         # "offset": [0, 0, 0]
     }
 
-    if args.scale is not None:
-        transforms["scale"] = args.scale
-    if args.offset is not None:
-        transforms["offset"] = args.offset
+    if scale is not None:
+        transforms["scale"] = scale
+    if offset is not None:
+        transforms["offset"] = offset
 
     transforms["frames"] = frames
 
-    with open(args.out, "w") as f:
+    with open(out_path, "w") as f:
         json.dump(transforms, f, indent=4, ensure_ascii=False)
+
+
+def parser_configure(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--aabb-scale", type=int, default=16, help="only work for instant-ngp")
+    parser.add_argument("--scene-scale", type=float, default=1, help="only work with --recenter")
+    parser.add_argument("--recenter", action="store_true")
+    parser.add_argument("--reorient", action="store_true")
+    parser.add_argument("--scale", type=float)
+    parser.add_argument("--offset", nargs="+", type=float)
+
+
+if __name__ == "__main__":
+    args = internal.arguments.get_parameters(parser_configure)
+
+    convert2ngp(
+        transforms_npy_path=args.transforms_npy,
+        out_path=args.out,
+        image_dir=args.image_dir,
+        down_sample=args.down_sample,
+        reorient_scene=args.reorient,
+        recenter_scene=args.recenter,
+        aabb_scale=args.aabb_scale,
+        scene_scale=args.scene_scale,
+        scale=args.scale,
+        offset=args.offset,
+    )

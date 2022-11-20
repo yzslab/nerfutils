@@ -189,7 +189,7 @@ def closest_point_2_lines(oa, da, ob,
 
 def recenter(transform_matrix: dict, scene_scale: float) -> dict:
     # find a central point they are all looking at
-    print("computing center of attention...")
+    # print("computing center of attention...")
     totw = 0.0
     totp = np.array([0.0, 0.0, 0.0])
     for f in transform_matrix:
@@ -201,7 +201,7 @@ def recenter(transform_matrix: dict, scene_scale: float) -> dict:
                 totp += p * w
                 totw += w
     totp /= totw
-    print(totp)  # the cameras are looking at totp
+    # print(totp)  # the cameras are looking at totp
     for f in transform_matrix:
         transform_matrix[f][0:3, 3] -= totp
 
@@ -211,7 +211,7 @@ def recenter(transform_matrix: dict, scene_scale: float) -> dict:
 
     nframes = len(transform_matrix)
     avglen /= nframes
-    print("avg camera distance from origin", avglen)
+    # print("avg camera distance from origin", avglen)
     for f in transform_matrix:
         transform_matrix[f][0:3, 3] *= 4 * scene_scale / avglen  # scale to "nerf sized"
 
