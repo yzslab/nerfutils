@@ -17,7 +17,7 @@
     - `cameras`: a list of `Camera Dict` mentioned above
     - `intrinsics_matrix`: camera intrinsics matrix of `cameras`, use same index as the `cameras` list
     - `image_c2w`: a dictionary of camera-to-world matrix, key by image file path
-    - `image_camera_id`: a dictionary of camera id of the image, key by image file path
+    - `image_camera_id`: a dictionary of camera id of the images, key by image file path
 - Coordinate System
     - GPS to XYZ Coordinate System
         - `X`: north
@@ -25,12 +25,12 @@
         - `Z`: up
     - Camera-to-World matrix Coordinate System
         - `X`: north
-        - `Y`: west (different with the XYZ from GPS)
+        - `Y`: west (different from the XYZ from GPS)
         - `Z`: up
     - Camera Coordinate System
         - `X`: right
         - `Y`: down
-        - `-Z`: scene (different with the colmap)
+        - `-Z`: scene (different from the colmap)
 
 ## Usage
 
