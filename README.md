@@ -2,9 +2,7 @@
 
 ## Conventions
 
-- Fields of Camera Dict
-    - `angle_x`: the field of view of the X axis in radian
-    - `angle_y`: ... Y axis
+- Fields of a Camera Dict
     - `cx`: principle point of the X axis
     - `cy`: ... Y axis
     - `fl_x`: focal length of the X axis in pixel
@@ -12,12 +10,14 @@
     - `w`: width in pixel
     - `h`: height ...
     - `k1`, `k2`, `p1`, `p2`: OpenCV distortion parameters
-    - `intrinsics_matirx`: intrinsics matrix
+- Fields of an Image Dict
+  - `c2w`: camera-to-world transform matrix
+  - `camera_id`: camera id of cameras dict
+  - `depth`: `[near, far]`
 - Fields of transforms.npy
-    - `cameras`: a list of `Camera Dict` mentioned above
-    - `intrinsics_matrix`: camera intrinsics matrix of `cameras`, use same index as the `cameras` list
-    - `image_c2w`: a dictionary of camera-to-world matrix, key by image file path
-    - `image_camera_id`: a dictionary of camera id of the images, key by image file path
+    - `cameras`: a dict of `Camera Dict` mentioned above, key by camera id
+    - `depth`: global depth in camera coordinate, `[near, far]`
+    - `images`: a dictionary of `Image Dict` mentioned above, key by image file name
 - Coordinate System
     - GPS to XYZ Coordinate System
         - `X`: north
