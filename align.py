@@ -60,12 +60,21 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--exif-yaml", required=True, type=str)
 parser.add_argument("--xyz-yaml", required=True, type=str)
 parser.add_argument("--block-dir", required=True, type=str)
+parser.add_argument("--blocks", nargs="*", type=str)
 # parser.add_argument("--out-merged", type=str)
 parser.add_argument("--skip-missing-npy", action="store_true")
+parser.add_argument("--out-dir", type=str)
 args = parser.parse_args()
 
-with open(os.path.join(args.block_dir, "block-list.yaml"), "rb") as f:
-    block_list = yaml.safe_load(f)
+if len(args.blocks) == 0:
+    with open(os.path.join(args.block_dir, "block-list.yaml"), "rb") as f:
+        block_list = yaml.safe_load(f)
+else:
+    block_list = args.blocks
+
+out_dir = args.block_dir
+if args.out_dir is not None:
+    out_dir = args.out_dir
 
 blocks = []
 for block_id in block_list:

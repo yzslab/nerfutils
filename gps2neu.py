@@ -20,11 +20,11 @@ image_coordinates = {}
 
 for i in data:
     exif_data = data[i]
-    gps = exif_data["xmp"]["gps"]
+    gps = exif_data["SimplifiedGPSInfo"]
 
     # x: north, y: east, z: up
     y, x, z = pm.geodetic2enu(
-        gps["latitude"], gps["longitude"], gps["relative_altitude"],
+        gps["Latitude"], gps["Longitude"], gps["Altitude"],
         *args.origin
     )
 

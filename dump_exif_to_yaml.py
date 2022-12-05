@@ -17,16 +17,16 @@ for root, dirs, files in os.walk(args.path):
         simplified_filename = filename[len(args.path) + 1:]
         SimplifiedGPSInfo = img_exif_data["SimplifiedGPSInfo"]
         data[simplified_filename] = {
-            "ImageWidth": img_exif_data["ImageWidth"],
-            "ImageLength": img_exif_data["ImageLength"],
+            # "ImageWidth": img_exif_data["ImageWidth"],
+            # "ImageLength": img_exif_data["ImageLength"],
             "Model": img_exif_data["Model"],
-            "BitsPerSample": list(img_exif_data["BitsPerSample"]),
+            # "BitsPerSample": list(img_exif_data["BitsPerSample"]),
             "FocalLengthIn35mmFilm": img_exif_data["FocalLengthIn35mmFilm"],
             "SimplifiedGPSInfo": SimplifiedGPSInfo,
             "xmp": img_exif_data["xmp"],
         }
 
-save_to = os.path.join(args.path, "exif.yaml")
+save_to = args.out
 with open(save_to, mode="w", encoding="utf-8") as f:
     yaml.dump(data, f, allow_unicode=True)
 

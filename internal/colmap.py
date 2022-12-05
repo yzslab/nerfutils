@@ -99,8 +99,8 @@ def parse_cameras_txt(path_to_txt: str, down_scale: int = 1):
 
             camera_details = {
                 # width and height
-                "w": w,
-                "h": h,
+                "w": int(w),
+                "h": int(h),
                 # principle point
                 "cx": cx,
                 "cy": cy,

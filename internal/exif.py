@@ -85,6 +85,8 @@ def parse_exif_values_by_directory(path: str):
     for k in img_exif:
         exif = img_exif[k]
         xmp = exif["xmp"]
+        if len(xmp.keys()) == 0:
+            continue
         exif["xmp"] = {
             "gps": {
                 "latitude": float(xmp["GpsLatitude"]),
