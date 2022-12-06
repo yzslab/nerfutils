@@ -8,6 +8,7 @@ parser.add_argument("--factor", type=int)
 args = parser.parse_args()
 
 for root, dirs, files in os.walk(args.src):
+    print(root)
     relative_path = root.replace(args.src, "").strip("/")
     dst_path = os.path.join(args.dst, relative_path)
     os.makedirs(dst_path, exist_ok=True)

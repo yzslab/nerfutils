@@ -127,7 +127,13 @@ def parse_images(images: dict):
     return w2c_dict, c2w_dict, camera_id_dict
 
 
-def colmap2c2w(model_dir: str, out_dir: str, out_name: str = "transforms.npy"):
+def colmap2c2w(
+        model_dir: str,
+        out_dir: str,
+        out_name: str = "transforms.npy",
+        depth_percentile_min: float = None,
+        depth_percentile_max: float = None,
+):
     cameras, images, points3D = read_model(model_dir)
 
     parsed_cameras = parse_cameras(cameras)
@@ -157,8 +163,9 @@ def colmap2c2w(model_dir: str, out_dir: str, out_name: str = "transforms.npy"):
         image_points[image_id] = point_xyz_in_camera
 
         z_vals = point_xyz_in_camera[:, 2]
-        z_val_min = np.min(z_vals)
-        z_val_max = np.max(z_vals)
+        z_val_min, z_val_max = np.percentile(z_vals, depth_percentile_min), np.percentile(z_vals, depth_percentile_max)
+        # z_val_min = np.min(z_vals)
+        # z_val_max = np.max(z_vals)
 
         near[image_name] = z_val_min
         far[image_name] = z_val_max
@@ -203,7 +210,8 @@ def colmap2c2w(model_dir: str, out_dir: str, out_name: str = "transforms.npy"):
     transforms["depth"] = [float(transforms["depth"][0]), float(transforms["depth"][1])]
     for k in transforms["images"]:
         transforms["images"][k]["c2w"] = transforms["images"][k]["c2w"].tolist()
-        transforms["images"][k]["depth"] = [float(transforms["images"][k]["depth"][0]), float(transforms["images"][k]["depth"][1])]
+        transforms["images"][k]["depth"] = [float(transforms["images"][k]["depth"][0]),
+                                            float(transforms["images"][k]["depth"][1])]
 
     with open(os.path.join(out_dir, "{}.yaml".format(out_name)), "w") as f:
         yaml.dump(transforms, f, allow_unicode=True)

@@ -58,11 +58,19 @@ def visualize_cameras(transforms, sphere_radius, camera_size=0.1, geometry_file=
     things_to_draw = [sphere, coord_frame]
 
     frustums = []
-    for img_name in transforms['image_c2w']:
-        image_camera_id = transforms["image_camera_id"][img_name]
+    for img_name in transforms['images']:
+        image_information = transforms["images"][img_name]
+        image_camera_id = image_information["camera_id"]
         image_camera = transforms["cameras"][image_camera_id]
-        image_c2w = transforms['image_c2w'][img_name]
-        intrinsics_matrix = transforms["intrinsics_matrix"][image_camera_id]
+        image_c2w = image_information["c2w"]
+
+        K = np.identity(3)
+        K[0, 0] = image_camera["fl_x"]
+        K[1, 1] = image_camera["fl_y"]
+        K[0, 2] = image_camera["cx"]
+        K[1, 2] = image_camera["cy"]
+        intrinsics_matrix = K
+
         img_size = [image_camera["w"], image_camera["h"]]
         frustums.append(
             get_camera_frustum(img_size, intrinsics_matrix, image_c2w, frustum_length=camera_size, color=[0, 0, 1]))
@@ -93,15 +101,15 @@ if __name__ == '__main__':
 
     transforms = np.load(args.transforms_npy, allow_pickle=True).item()
 
-    print(f"{len(transforms['image_c2w'])} camera poses loaded")
+    print(f"{len(transforms['images'])} camera poses loaded")
 
     if args.scale is not None:
-        for i in transforms['image_c2w']:
-            transforms['image_c2w'][i][0:3, 3] *= args.scale
+        for i in transforms['images']:
+            transforms['images'][i]["c2w"][0:3, 3] *= args.scale
     if args.opencv_c2w is False:
         print("flip z axis")
-        for i in transforms['image_c2w']:
-            transforms['image_c2w'][i] = internal.transform_matrix.convert_pose(transforms['image_c2w'][i])
+        for i in transforms['images']:
+            transforms['images'][i]["c2w"] = internal.transform_matrix.convert_pose(transforms['images'][i]["c2w"])
 
     sphere_radius = 1.
     camera_size = args.camera_size
