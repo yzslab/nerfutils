@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import yaml
 import numpy as np
 
+from tqdm import tqdm
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--xyz-yaml", required=True, type=str)
 parser.add_argument("--block-size", required=True, type=int)
@@ -14,6 +16,9 @@ parser.add_argument("--block-size-enlarge-factor", default=0.1)
 parser.add_argument("--out-block-dir", type=str)
 parser.add_argument("--plot-only", action="store_true")
 parser.add_argument("--image-dir", type=str)
+parser.add_argument("--symbolic-link", action="store_true")
+parser.add_argument("--same-dir", action="store_true",
+                    help="place all images of the same block into the same directory")
 args = parser.parse_args()
 
 global_origin = np.asarray([0., 0., 0.])
@@ -108,7 +113,9 @@ for ny in range(0, n_blocks[1]):
 
 # assign images to blocks
 def assign_images_to_blocks(block_list: list):
-    for image_name in image_coordinates:
+    pbar = tqdm(image_coordinates)
+    for image_name in pbar:
+        pbar.set_description("{}".format(image_name))
         coordinate = np.asarray(image_coordinates[image_name])[:-1]
         for block in block_list:
             if np.all(coordinate >= block["bbox"]["min"]) and np.all(coordinate <= block["bbox"]["max"]):
@@ -118,6 +125,7 @@ def assign_images_to_blocks(block_list: list):
 
 blocks_to_reassign_images = blocks
 reassign_count = 0
+print("assigning images to blocks...")
 while len(blocks_to_reassign_images) > 0 and reassign_count < 6:
     assign_images_to_blocks(blocks_to_reassign_images)
     reassign_count = reassign_count + 1
@@ -138,7 +146,6 @@ while len(blocks_to_reassign_images) > 0 and reassign_count < 6:
         }
         print(f"block ({block['c'][0]}, {block['c'][1]}) enlarged to {scaled_block_size}")
         blocks_to_reassign_images.append(block)
-
 
 # plot scatter
 image_x = []
@@ -190,37 +197,56 @@ if args.out_block_dir is not None:
 
     block_count = 0
     block_list = []
-    for y in block_y:
-        for x in block_x:
-            block = blocks[block_count]
-            print(f"building block ({x}, {y}) - ({block['c'][0]}, {block['c'][1]})")
-            block_list.append(f"{x},{y}")
 
-            block_base_path = os.path.join(args.out_block_dir, f"{x},{y}")
-            block_images_path = os.path.join(block_base_path, "images")
-            os.makedirs(block_images_path, exist_ok=True)
+    with tqdm(total=len(block_y) * len(block_x)) as pbar:
+        for y in block_y:
+            for x in block_x:
+                block = blocks[block_count]
+                pbar.set_description(f"building block ({x}, {y}) - ({block['c'][0]}, {block['c'][1]})")
+                block_list.append(f"{x},{y}")
 
-            for image_path in block["images"]:
-                os.makedirs(os.path.join(block_images_path, os.path.dirname(image_path)), exist_ok=True)
-                src_path = os.path.join(image_base_dir, image_path)
-                dst_path = os.path.join(block_images_path, image_path)
-                if src_path == dst_path:
-                    raise ValueError(f"output path is the same as image path: {dst_path}")
-                # delete exists file
-                if os.path.exists(dst_path):
-                    os.unlink(dst_path)
-                # create hard link
-                os.link(
-                    src_path,
-                    dst_path,
-                )
+                block_base_path = os.path.join(args.out_block_dir, f"{x},{y}")
+                block_images_path = os.path.join(block_base_path, "images")
+                os.makedirs(block_images_path, exist_ok=True)
 
-            # write block yaml file
-            with open(os.path.join(block_base_path, "block.yaml"), "w") as f:
-                yaml.dump(block, f, allow_unicode=True)
+                for image_path in list(block["images"].keys()):
+                    src_path = os.path.join(image_base_dir, image_path)
 
-            block_count = block_count + 1
+                    if args.same_dir:
+                        del block["images"][image_path]
+                        image_path = image_path.replace("/", "_")
+                        block["images"][image_path] = True
+
+                    os.makedirs(os.path.join(block_images_path, os.path.dirname(image_path)), exist_ok=True)
+                    dst_path = os.path.join(block_images_path, image_path)
+
+                    if src_path == dst_path:
+                        raise ValueError(f"output path is the same as image path: {dst_path}")
+
+                    # delete exists file
+                    if os.path.exists(dst_path):
+                        os.unlink(dst_path)
+
+                    if args.symbolic_link is True:
+                        # create symbolic link
+                        os.symlink(
+                            src_path,
+                            dst_path,
+                        )
+                    else:
+                        # create hard link
+                        os.link(
+                            src_path,
+                            dst_path,
+                        )
+
+                # write block yaml file
+                with open(os.path.join(block_base_path, "block.yaml"), "w") as f:
+                    yaml.dump(block, f, allow_unicode=True)
+
+                block_count = block_count + 1
+
+                pbar.update(1)
 
     with open(os.path.join(args.out_block_dir, "block-list.yaml"), "w") as f:
         yaml.dump(block_list, f, allow_unicode=True)
-
