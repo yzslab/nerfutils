@@ -1,6 +1,6 @@
 import argparse
 import os
-import sys
+import math
 
 import numpy as np
 import json
@@ -65,12 +65,12 @@ def convert2ngp(
 ):
     transforms_and_cameras = np.load(transforms_npy_path, allow_pickle=True).item()
 
-    camera = transforms_and_cameras["cameras"][0]
+    camera = transforms_and_cameras["cameras"][list(transforms_and_cameras["cameras"].keys())[0]]
 
     img_width = camera["w"]
     img_height = camera["h"]
-    camera_angle_x = camera["angle_x"]
-    camera_angle_y = camera["angle_y"]
+    # camera_angle_x = camera["angle_x"]
+    # camera_angle_y = camera["angle_y"]
     fl_x = camera["fl_x"]
     fl_y = camera["fl_y"]
     cx = camera["cx"]
@@ -83,7 +83,9 @@ def convert2ngp(
     # if down_sample != 1:
     #     k1, k2, p1, p2 = 0, 0, 0, 0
 
-    transform_matrix = transforms_and_cameras["image_c2w"]
+    transform_matrix = {}
+    for image_name in transforms_and_cameras["images"]:
+        transform_matrix[image_name] = transforms_and_cameras["images"][image_name]["c2w"]
 
     if reorient_scene is True:
         up = calculate_up_vector(transform_matrix)
@@ -100,6 +102,9 @@ def convert2ngp(
             "file_path": os.path.join(image_dir, f),
             "transform_matrix": transform_matrix[f].tolist(),
         })
+
+    camera_angle_x = math.atan(img_width / (fl_x * 2)) * 2
+    camera_angle_y = math.atan(img_height / (fl_y * 2)) * 2
 
     # build transform
     transforms = {
