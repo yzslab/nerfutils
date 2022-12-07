@@ -5,7 +5,7 @@ import yaml
 
 parser = argparse.ArgumentParser()
 parser.add_argument("path", help="path to directory storing images taken by DJI Drone")
-parser.add_argument("out")
+parser.add_argument("out", help="path to output yaml file")
 args = parser.parse_args()
 
 data = {}

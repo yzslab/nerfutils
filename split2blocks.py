@@ -209,8 +209,8 @@ if args.out_block_dir is not None:
                 # delete exists file
                 if os.path.exists(dst_path):
                     os.unlink(dst_path)
-                # create symbol link
-                os.symlink(
+                # create hard link
+                os.link(
                     src_path,
                     dst_path,
                 )

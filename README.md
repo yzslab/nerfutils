@@ -101,12 +101,13 @@
     ```
 
 - Block NeRF
-    1. Extract GPS and Euler Angles to yaml file
-    2. Convert GPS to xyz (NEU)
+    1. Extract GPS and Euler Angles to yaml file (dump_exif_to_yaml.py)
+    2. Convert GPS to xyz (NEU) (gps2neu.py)
     3. Split to multi blocks according to xyz coordinates
         ```bash
        python split2blocks.py \
          --xyz-yaml gps2neu.py_OUTPUT_YAML_FILE_PATH \
+         --image-dir PATH_TO_IMAGE_DIR \
          --out-block-dir BLOCK_OUTPUT_DIR \
          --block-size BLOCK_RADIUS \  # open gps2neu.py output plot to get suitable value
          --overlap OVERLAP_RATIO  # 0.5 is recommend
