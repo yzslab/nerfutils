@@ -58,11 +58,10 @@ def visualize_cameras(transforms, sphere_radius, camera_size=0.1, geometry_file=
     things_to_draw = [sphere, coord_frame]
 
     frustums = []
-    for img_name in transforms['images']:
-        image_information = transforms["images"][img_name]
-        image_camera_id = image_information["camera_id"]
+    for img_name in transforms['image_c2w']:
+        image_camera_id = transforms["image_camera_id"][img_name]
         image_camera = transforms["cameras"][image_camera_id]
-        image_c2w = image_information["c2w"]
+        image_c2w = transforms["image_c2w"][img_name]
 
         K = np.identity(3)
         K[0, 0] = image_camera["fl_x"]
@@ -101,15 +100,17 @@ if __name__ == '__main__':
 
     transforms = np.load(args.transforms_npy, allow_pickle=True).item()
 
-    print(f"{len(transforms['images'])} camera poses loaded")
+    image_list = list(transforms["image_c2w"].keys())
+
+    print(f"{len(image_list)} camera poses loaded")
 
     if args.scale is not None:
-        for i in transforms['images']:
-            transforms['images'][i]["c2w"][0:3, 3] *= args.scale
+        for i in image_list:
+            transforms['image_c2w'][i][0:3, 3] *= args.scale
     if args.opencv_c2w is False:
         print("flip z axis")
-        for i in transforms['images']:
-            transforms['images'][i]["c2w"] = internal.transform_matrix.convert_pose(transforms['images'][i]["c2w"])
+        for i in image_list:
+            transforms['image_c2w'][i] = internal.transform_matrix.convert_pose(transforms['image_c2w'][i])
 
     sphere_radius = 1.
     camera_size = args.camera_size

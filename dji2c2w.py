@@ -24,15 +24,15 @@ with open(args.xyz_yaml, "r") as f:
 c2w_dict = {}
 for i in img_exif_dict:
     exif = img_exif_dict[i]
-    gimbal = exif["xmp"]["gimbal"]
+    xmp = exif["xmp"]
     xyz = img_xyz_dict[i]
 
     c2w = internal.transform_matrix.generate_transform_matrix(
         [xyz[0], -xyz[1], xyz[2]],
         [
-            math.radians(-gimbal["yaw"]),
-            math.radians(-gimbal["pitch"]),
-            math.radians(-gimbal["roll"])
+            math.radians(-float(xmp["GimbalYawDegree"])),
+            math.radians(-float(xmp["GimbalPitchDegree"])),
+            math.radians(-float(xmp["GimbalRollDegree"]))
         ],
     )
     c2w_dict[i] = c2w

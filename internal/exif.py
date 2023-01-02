@@ -72,6 +72,8 @@ def extract(image_path: str):
             "Altitude": float(gpsinfo["GPSAltitude"]),
         }
 
+        exif["ImageWidth"], exif["ImageHeight"] = im.width, im.height
+
         xmp = extract_xmp_values(im)
         exif["xmp"] = xmp
 

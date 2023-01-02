@@ -7,6 +7,7 @@ import yaml
 parser = argparse.ArgumentParser()
 parser.add_argument("--exif-yaml", required=True)
 parser.add_argument("--out-npy", required=True)
+parser.add_argument("--sensor-size", nargs="*", type=float)
 args = parser.parse_args()
 
 with open(args.exif_yaml, "r") as f:
@@ -24,15 +25,23 @@ for i in img_exif:
     # if camera model not in camera_index, create it
     if camera_model not in camera_index:
         width = exif["ImageWidth"]
-        height = exif["ImageLength"]
+        height = exif["ImageHeight"]
 
         # focal length
-        fl_in_35mm = exif["FocalLengthIn35mmFilm"]
-        ## 35 mm movie film dimensions: 36mm x 24mm
-        camera_angle_x = float(2 * np.arctan((36 / 2) / fl_in_35mm))
-        camera_angle_y = float(2 * np.arctan((24 / 2) / fl_in_35mm))
+        focal_length = 0
+        if "FocalLengthIn35mmFilm" in exif:
+            focal_length = float(exif["FocalLengthIn35mmFilm"])
+        if focal_length > 0:
+            sensor_size = [36., 24.]
+        else:
+            focal_length = float(exif["FocalLength"])
+            sensor_size = args.sensor_size
 
-        fl_in_pixel = fl_in_35mm * width / 36
+        ## 35 mm movie film dimensions: 36mm x 24mm
+        camera_angle_x = float(2 * np.arctan((sensor_size[0] / 2) / focal_length))
+        camera_angle_y = float(2 * np.arctan((sensor_size[1] / 2) / focal_length))
+
+        fl_in_pixel = focal_length * width / sensor_size[0]
 
         # principle point
         cx = width / 2
@@ -52,7 +61,6 @@ for i in img_exif:
             "h": height,
             "angle_x": camera_angle_x,
             "angle_y": camera_angle_y,
-            "fl_35mm": fl_in_35mm,
             "fl_x": fl_in_pixel,
             "fl_y": fl_in_pixel,
             "cx": cx,

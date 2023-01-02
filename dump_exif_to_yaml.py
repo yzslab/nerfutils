@@ -2,6 +2,7 @@ import os
 import argparse
 from internal.exif import parse_exif_values_by_directory
 import yaml
+import PIL.TiffImagePlugin
 
 parser = argparse.ArgumentParser()
 parser.add_argument("path", help="path to directory storing images taken by DJI Drone")
@@ -17,14 +18,20 @@ for root, dirs, files in os.walk(args.path):
         simplified_filename = filename[len(args.path) + 1:]
         SimplifiedGPSInfo = img_exif_data["SimplifiedGPSInfo"]
         data[simplified_filename] = {
-            # "ImageWidth": img_exif_data["ImageWidth"],
-            # "ImageLength": img_exif_data["ImageLength"],
+            "ImageWidth": img_exif_data["ImageWidth"],
+            "ImageHeight": img_exif_data["ImageHeight"],
             "Model": img_exif_data["Model"],
             # "BitsPerSample": list(img_exif_data["BitsPerSample"]),
             # "FocalLengthIn35mmFilm": img_exif_data["FocalLengthIn35mmFilm"],
             "SimplifiedGPSInfo": SimplifiedGPSInfo,
             "xmp": img_exif_data["xmp"],
         }
+        for key in ["FocalLengthIn35mmFilm", "FocalLength"]:
+            if key in img_exif_data:
+                value = img_exif_data[key]
+                if type(value) is PIL.TiffImagePlugin.IFDRational:
+                    value = float(value)
+                data[simplified_filename][key] = value
 
 save_to = args.out
 with open(save_to, mode="w", encoding="utf-8") as f:
