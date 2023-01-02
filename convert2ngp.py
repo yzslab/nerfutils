@@ -88,9 +88,11 @@ def convert2ngp(
         transform_matrix[image_name] = transforms_and_cameras["images"][image_name]["c2w"]
 
     if reorient_scene is True:
+        print("reorient...")
         up = calculate_up_vector(transform_matrix)
         transform_matrix = reorient(up, transform_matrix)
     if recenter_scene is True:
+        print("recenter...")
         transform_matrix = internal.transform_matrix.recenter(transform_matrix, scene_scale)
     # for f in transform_matrix:
     #     transform_matrix[f][0:3, 3] *= 0.02  # scale to "nerf sized"

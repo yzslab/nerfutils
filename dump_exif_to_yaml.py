@@ -21,7 +21,7 @@ for root, dirs, files in os.walk(args.path):
             # "ImageLength": img_exif_data["ImageLength"],
             "Model": img_exif_data["Model"],
             # "BitsPerSample": list(img_exif_data["BitsPerSample"]),
-            "FocalLengthIn35mmFilm": img_exif_data["FocalLengthIn35mmFilm"],
+            # "FocalLengthIn35mmFilm": img_exif_data["FocalLengthIn35mmFilm"],
             "SimplifiedGPSInfo": SimplifiedGPSInfo,
             "xmp": img_exif_data["xmp"],
         }

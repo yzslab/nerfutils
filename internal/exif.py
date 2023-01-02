@@ -2,6 +2,7 @@ import os
 import glob
 import PIL.Image
 import PIL.ExifTags
+import xml.etree.ElementTree as ET
 
 
 def extract_exif_values(im):
@@ -25,16 +26,25 @@ def extract_xmp_values(im):
         if segment == 'APP1' and marker == b'http://ns.adobe.com/xap/1.0/':
             # convert to string
             str_body = body.decode()
+            tree = ET.fromstring(str_body)
+            for child in tree.iter():
+                for attr in child.attrib:
+                    key = attr.rsplit("}", maxsplit=1)
+                    if len(key) == 2:
+                        key = key[1]
+                    else:
+                        key = attr
+                    xmp[key] = child.attrib[attr]
             # process row by row
-            for row in str_body.split("\n"):
-                # retrieve xmp items
-                stripped_row = row.strip(" ")
-                if stripped_row.startswith("drone-dji"):
-                    _, item = stripped_row.split(":")
-                    k, v = item.split("=")
-                    v = v.strip("\"")
-                    # store into xml dictionary
-                    xmp[k] = v
+            # for row in str_body.split("\n"):
+            #     # retrieve xmp items
+            #     stripped_row = row.strip(" ")
+            #     if stripped_row.startswith("drone-dji"):
+            #         _, item = stripped_row.split(":")
+            #         k, v = item.split("=")
+            #         v = v.strip("\"")
+            #         # store into xml dictionary
+            #         xmp[k] = v
 
     return xmp
 
@@ -87,23 +97,23 @@ def parse_exif_values_by_directory(path: str):
         xmp = exif["xmp"]
         if len(xmp.keys()) == 0:
             continue
-        exif["xmp"] = {
-            "gps": {
-                "latitude": float(xmp["GpsLatitude"]),
-                "longitude": float(xmp["GpsLongitude"]),
-                "absolute_altitude": float(xmp["AbsoluteAltitude"]),
-                "relative_altitude": float(xmp["RelativeAltitude"]),
-            },
-            "gimbal": {
-                "roll": float(xmp["GimbalRollDegree"]),
-                "yaw": float(xmp["GimbalYawDegree"]),
-                "pitch": float(xmp["GimbalPitchDegree"]),
-            },
-            "flight": {
-                "roll": float(xmp["FlightRollDegree"]),
-                "yaw": float(xmp["FlightYawDegree"]),
-                "pitch": float(xmp["FlightPitchDegree"]),
-            },
-        }
+        # exif["xmp"] = {
+        #     "gps": {
+        #         "latitude": float(xmp["GpsLatitude"]),
+        #         "longitude": float(xmp["GpsLongitude"]),
+        #         "absolute_altitude": float(xmp["AbsoluteAltitude"]),
+        #         "relative_altitude": float(xmp["RelativeAltitude"]),
+        #     },
+        #     "gimbal": {
+        #         "roll": float(xmp["GimbalRollDegree"]),
+        #         "yaw": float(xmp["GimbalYawDegree"]),
+        #         "pitch": float(xmp["GimbalPitchDegree"]),
+        #     },
+        #     "flight": {
+        #         "roll": float(xmp["FlightRollDegree"]),
+        #         "yaw": float(xmp["FlightYawDegree"]),
+        #         "pitch": float(xmp["FlightPitchDegree"]),
+        #     },
+        # }
 
     return img_exif

@@ -143,6 +143,11 @@ def colmap2c2w(
     image_points = {}  # [image_id][point index] = [x, y, z]
     for point_id in points3D:
         point = points3D[point_id]
+
+        # track length
+        if len(point.point2D_idxs) < 3:
+            continue
+
         for image_id in point.image_ids:
             # create empty list if list not exists
             if image_id not in image_points:
