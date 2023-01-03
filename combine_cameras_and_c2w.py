@@ -14,30 +14,27 @@ print("loading camera poses")
 c2w = np.load(args.c2w_npy, allow_pickle=True).item()
 
 transforms = {
-    "cameras": [],
-    "intrinsics_matrix": [],
-    "image_c2w": {},
-    "image_camera_id": {},
+    "cameras": {},
+    "images": {},
 }
 
-for i in cameras["cameras"]:
+for idx, i in enumerate(cameras["cameras"]):
     camera = {}
-    for key in ["angle_x", "angle_y", "cx", "cy", "fl_x", "fl_y", "w", "h"]:
+    for key in ["cx", "cy", "fl_x", "fl_y", "w", "h"]:
         camera[key] = i[key]
-    transforms["cameras"].append(camera)
-    transforms["intrinsics_matrix"].append(i["intrinsics_matrix"])
+    transforms["cameras"][idx] = camera
 
 for image_name in cameras["image_cameras"]:
-    transforms["image_c2w"][image_name] = c2w[image_name]
-    transforms["image_camera_id"][image_name] = cameras["image_cameras"][image_name]
+    transforms["images"][image_name] = {
+        "c2w": c2w[image_name],
+        "camera_id": cameras["image_cameras"][image_name],
+    }
 
 print("saving result")
 np.save(args.out_npy, transforms, allow_pickle=True)
 
-for id, i in enumerate(transforms["intrinsics_matrix"]):
-    transforms["intrinsics_matrix"][id] = transforms["intrinsics_matrix"][id].tolist()
-for i in transforms["image_c2w"]:
-    transforms["image_c2w"][i] = transforms["image_c2w"][i].tolist()
+for i in transforms["images"]:
+    transforms["images"][i]["c2w"] = transforms["images"][i]["c2w"].tolist()
 
 with open(f"{args.out_npy}.yaml", "w") as f:
     yaml.dump(transforms, f, allow_unicode=True)
