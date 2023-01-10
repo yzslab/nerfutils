@@ -1,3 +1,5 @@
+import os
+import yaml
 import numpy as np
 
 
@@ -29,3 +31,26 @@ def get_meta_info(img_exif, down_sample_factor: int = None):
     origin = [gps["latitude"], gps["longitude"], gps["relative_altitude"]]
 
     return img_width, img_height, focal_length_in_pixel, camera_angle_x, camera_angle_y, cx, cy, origin
+
+
+def get_dataset_spliter(split_yaml: str, each: int = 8):
+    if split_yaml is not None:
+        if os.path.exists(split_yaml) is False:
+            raise ValueError("{} not found".format(split_yaml))
+        with open(split_yaml, "r") as split_file_stream:
+            split_list = yaml.safe_load(split_file_stream)
+
+        def split_set(filename: str, idx: int):
+            if filename in split_list["test"]:
+                return "test"
+            return "train"
+    elif each > 1:
+        def split_set(filename: str, idx: int):
+            if idx % each == 0:
+                return "test"
+            return "train"
+    else:
+        def split_set(filename: str, idx: int):
+            return "train"
+
+    return split_set

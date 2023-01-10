@@ -133,13 +133,24 @@ def colmap2c2w(
         out_name: str = "transforms.npy",
         depth_percentile_min: float = None,
         depth_percentile_max: float = None,
+        max_scene_depth: float = 5.,
 ):
+    if out_dir is None:
+        out_dir = os.path.join(model_dir, "..")
+        if os.path.basename(model_dir.rstrip("/")).isnumeric() is True:
+            out_dir = os.path.join(model_dir, "..", "..")
+        out_dir = os.path.realpath(out_dir)
+        print("auto set output directory: {}".format(out_dir))
+
+    print("loading database...")
     cameras, images, points3D = read_model(model_dir)
 
+    print("parsing camera poses...")
     parsed_cameras = parse_cameras(cameras)
     w2c, c2w, camera_id = parse_images(images)
 
     # fine near and far via points3D
+    print("parsing point cloud...")
     image_points = {}  # [image_id][point index] = [x, y, z]
     for point_id in points3D:
         point = points3D[point_id]
@@ -160,6 +171,7 @@ def colmap2c2w(
     far = {}
 
     ## convert point [x, y, z] to camera coordinate
+    print("calculating depth...")
     for image_id in image_points:
         point_xyz_in_world = np.stack(image_points[image_id])
         image_name = images[image_id].name
@@ -179,6 +191,25 @@ def colmap2c2w(
         if z_val_max > max_far:
             max_far = z_val_max
 
+    # calculate scene scale factor
+    scene_scale_factor = None
+    if max_scene_depth > 0 and max_far > max_scene_depth:
+        scene_scale_factor = max_far / max_scene_depth
+
+    # rescale scene
+    if scene_scale_factor is not None:
+        print("rescaling with factor {}".format(scene_scale_factor))
+        min_near /= scene_scale_factor
+        max_far /= scene_scale_factor
+        for i in near:
+            near[i] /= scene_scale_factor
+        for i in far:
+            far[i] /= scene_scale_factor
+        for i in c2w:
+            c2w[i][0:3, -1] /= scene_scale_factor
+
+    print("near: {}, far: {}".format(min_near, max_far))
+
     # convert to opengl convention: -z ---> scene
     for i in c2w:
         c2w[i] = internal.transform_matrix.convert_pose(c2w[i])
@@ -194,6 +225,7 @@ def colmap2c2w(
         }
 
     transforms = {
+        "scene_scale_factor": scene_scale_factor,
         "depth": [min_near, max_far],
         "cameras": parsed_cameras,
         # "intrinsics_matrix": intrinsics_matrix,

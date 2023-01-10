@@ -211,7 +211,8 @@ def recenter(transform_matrix: dict, scene_scale: float) -> dict:
 
     nframes = len(transform_matrix)
     avglen /= nframes
-    # print("avg camera distance from origin", avglen)
+    print("avg camera distance from origin", avglen)
+    print("scene scale factor: {}".format(4 * scene_scale / avglen))
     for f in transform_matrix:
         transform_matrix[f][0:3, 3] *= 4 * scene_scale / avglen  # scale to "nerf sized"
 

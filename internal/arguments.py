@@ -5,6 +5,7 @@ import argparse
 def get_parameters(parser_configure=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--transforms-npy", type=str, required=True)
+    parser.add_argument("--split-yaml", type=str)
     parser.add_argument("--out", type=str, required=True)
     parser.add_argument("--down-sample", type=int, default=1)
     parser.add_argument("--image-dir", type=str, default="images", help="path to down sampled images directory")
